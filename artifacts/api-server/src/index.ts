@@ -17,7 +17,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 app.listen(port, (err) => {
   if (err) {
-    logger.error({ err }, "Error listening on ports");
+    logger.error({ err }, "Error listening on port");
     process.exit(1);
   }
 
