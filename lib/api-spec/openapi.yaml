@@ -3,13 +3,23 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: API specification for the freelance design client portal
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: projects
+    description: Project operations
+  - name: requests
+    description: Design request operations
+  - name: files
+    description: File upload operations
+  - name: messages
+    description: Message operations
+  - name: dashboard
+    description: Dashboard summary operations
 paths:
   /healthz:
     get:
@@ -24,6 +34,216 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /projects:
+    get:
+      operationId: getProjects
+      tags: [projects]
+      summary: List all projects
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, in_progress, review, delivered, completed]
+      responses:
+        "200":
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a new design project request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectBody"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{id}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a single project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Project found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project (status, notes, etc)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectBody"
+      responses:
+        "200":
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /projects/{id}/files:
+    get:
+      operationId: getProjectFiles
+      tags: [files]
+      summary: Get files for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProjectFile"
+    post:
+      operationId: uploadProjectFile
+      tags: [files]
+      summary: Upload a file reference for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadFileBody"
+      responses:
+        "201":
+          description: File record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectFile"
+
+  /projects/{id}/messages:
+    get:
+      operationId: getProjectMessages
+      tags: [messages]
+      summary: Get messages for a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: createProjectMessage
+      tags: [messages]
+      summary: Post a message on a project
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageBody"
+      responses:
+        "201":
+          description: Message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/activity:
+    get:
+      operationId: getDashboardActivity
+      tags: [dashboard]
+      summary: Get recent activity feed
+      responses:
+        "200":
+          description: Recent activity items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +254,294 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Project:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        projectType:
+          type: string
+          enum: [logo, branding, web_design, social_media, print, illustration, other]
+        status:
+          type: string
+          enum: [pending, in_progress, review, delivered, completed]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        clientName:
+          type: string
+        clientEmail:
+          type: string
+        budget:
+          type: ["number", "null"]
+        deadline:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        fileCount:
+          type: integer
+        messageCount:
+          type: integer
+      required:
+        - id
+        - title
+        - description
+        - projectType
+        - status
+        - priority
+        - clientName
+        - clientEmail
+        - budget
+        - deadline
+        - createdAt
+        - updatedAt
+        - fileCount
+        - messageCount
+
+    ProjectDetail:
+      allOf:
+        - $ref: "#/components/schemas/Project"
+        - type: object
+          properties:
+            files:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProjectFile"
+            messages:
+              type: array
+              items:
+                $ref: "#/components/schemas/Message"
+          required:
+            - files
+            - messages
+
+    CreateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        projectType:
+          type: string
+          enum: [logo, branding, web_design, social_media, print, illustration, other]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        clientName:
+          type: string
+        clientEmail:
+          type: string
+        budget:
+          type: ["number", "null"]
+        deadline:
+          type: ["string", "null"]
+      required:
+        - title
+        - description
+        - projectType
+        - priority
+        - clientName
+        - clientEmail
+
+    UpdateProjectBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [pending, in_progress, review, delivered, completed]
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        budget:
+          type: ["number", "null"]
+        deadline:
+          type: ["string", "null"]
+
+    ProjectFile:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        fileType:
+          type: string
+        uploadedBy:
+          type: string
+          enum: [client, designer]
+        uploadedAt:
+          type: string
+        url:
+          type: string
+      required:
+        - id
+        - projectId
+        - fileName
+        - fileSize
+        - fileType
+        - uploadedBy
+        - uploadedAt
+        - url
+
+    UploadFileBody:
+      type: object
+      properties:
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        fileType:
+          type: string
+        uploadedBy:
+          type: string
+          enum: [client, designer]
+        url:
+          type: string
+      required:
+        - fileName
+        - fileSize
+        - fileType
+        - uploadedBy
+        - url
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        projectId:
+          type: integer
+        content:
+          type: string
+        senderName:
+          type: string
+        senderRole:
+          type: string
+          enum: [client, designer]
+        createdAt:
+          type: string
+      required:
+        - id
+        - projectId
+        - content
+        - senderName
+        - senderRole
+        - createdAt
+
+    CreateMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        senderName:
+          type: string
+        senderRole:
+          type: string
+          enum: [client, designer]
+      required:
+        - content
+        - senderName
+        - senderRole
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalProjects:
+          type: integer
+        activeProjects:
+          type: integer
+        completedProjects:
+          type: integer
+        pendingReview:
+          type: integer
+        projectsByStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusCount"
+        projectsByType:
+          type: array
+          items:
+            $ref: "#/components/schemas/TypeCount"
+      required:
+        - totalProjects
+        - activeProjects
+        - completedProjects
+        - pendingReview
+        - projectsByStatus
+        - projectsByType
+
+    StatusCount:
+      type: object
+      properties:
+        status:
+          type: string
+        count:
+          type: integer
+      required:
+        - status
+        - count
+
+    TypeCount:
+      type: object
+      properties:
+        projectType:
+          type: string
+        count:
+          type: integer
+      required:
+        - projectType
+        - count
+
+    ActivityItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [project_created, status_changed, file_uploaded, message_sent]
+        projectId:
+          type: integer
+        projectTitle:
+          type: string
+        description:
+          type: string
+        actorName:
+          type: string
+        actorRole:
+          type: string
+          enum: [client, designer]
+        createdAt:
+          type: string
+      required:
+        - id
+        - type
+        - projectId
+        - projectTitle
+        - description
+        - actorName
+        - actorRole
+        - createdAt
